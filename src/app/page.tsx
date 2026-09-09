@@ -1,20 +1,59 @@
 "use client";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { ArrowRight, Camera, Link2, Settings, Shield, ShoppingCart, Users } from "lucide-react";
-import { useRef } from "react";
 
-const services=[{icon:Camera,title:"Web Design",text:"Custom, high-converting websites."},{icon:ShoppingCart,title:"E-Commerce",text:"Online stores that scale with you."},{icon:Link2,title:"Integrations",text:"Connect your tools. Streamline your workflow."},{icon:Settings,title:"Automation",text:"Work less. Do more."},{icon:Users,title:"Memberships",text:"Communities, courses, client portals."},{icon:Shield,title:"Ongoing Support",text:"Keep your site fast, secure, and growing."}];
-const steps=[["DISCOVERY","Understand your goals, your brand, and your audience."],["DESIGN","Turn ideas into a strategic visual plan."],["BUILD","Develop, integrate, and bring it to life."],["LAUNCH","Test, optimize, and go live with confidence."],["SUPPORT","Ongoing help to keep you growing."]];
+import { ArrowRight, Link2, Settings, Shield, ShoppingCart, Users, Monitor } from "lucide-react";
 
-function Logo(){return <span className="concept-logo"><b>F</b><i>D</i></span>}
-function HeroArt(){const r=useRef<HTMLDivElement>(null),mx=useMotionValue(0),my=useMotionValue(0),sx=useSpring(mx,{stiffness:65,damping:18}),sy=useSpring(my,{stiffness:65,damping:18}),rx=useTransform(sy,[-.5,.5],[6,-6]),ry=useTransform(sx,[-.5,.5],[-8,8]);return <div ref={r} className="hero-art" onMouseMove={e=>{const b=r.current?.getBoundingClientRect();if(!b)return;mx.set((e.clientX-b.left)/b.width-.5);my.set((e.clientY-b.top)/b.height-.5)}} onMouseLeave={()=>{mx.set(0);my.set(0)}}><div className="smoke s1"/><div className="smoke s2"/><div className="embers">{Array.from({length:18}).map((_,i)=><i key={i} style={{left:`${(i*37)%94}%`,top:`${15+(i*29)%72}%`,animationDelay:`${i*.13}s`}}/>)}</div><motion.div className="forge-f" style={{rotateX:rx,rotateY:ry}}><span>F</span><div className="crack c1"/><div className="crack c2"/><div className="crack c3"/></motion.div><div className="forge-ground"/></div>}
+const services = [
+  { icon: Monitor, title: "Web Design", text: "Custom, high-converting websites." },
+  { icon: ShoppingCart, title: "E-Commerce", text: "Online stores that scale with you." },
+  { icon: Link2, title: "Integrations", text: "Connect your tools. Streamline your workflow." },
+  { icon: Settings, title: "Automation", text: "Work less. Do more." },
+  { icon: Users, title: "Memberships", text: "Communities, courses, client portals." },
+  { icon: Shield, title: "Ongoing Support", text: "Keep your site fast, secure, and growing." },
+];
 
-export default function Home(){return <main>
-<header className="topbar shell"><a className="wordmark" href="#top"><Logo/><span><strong>FORGED</strong><small>DIGITAL</small></span></a><nav><a href="#work">WORK</a><a href="#services">SERVICES</a><a href="#process">PROCESS</a><a href="#about">ABOUT</a></nav><a className="outline-btn" href="#contact">START A PROJECT <ArrowRight size={14}/></a></header>
-<section id="top" className="concept-hero"><div className="shell hero-inner"><div className="hero-copy"><p className="spaced">› FORGED DIGITAL</p><h1>WEBSITES BUILT<br/>TO <em>HIT DIFFERENT.</em></h1><p className="lead">Custom web design, e-commerce, integrations, and digital systems<br className="desktop"/> built around your business — not a template.</p><div className="hero-buttons"><a className="red-btn" href="#contact">START A PROJECT <ArrowRight size={14}/></a><a className="dark-btn" href="#services">SEE WHAT WE BUILD</a></div><div className="scroll-cue">SCROLL<span/></div></div><HeroArt/><div className="side-words">IDEAS<br/>SYSTEMS<br/>BUSINESSES<br/>BUILT STRONGER</div><div className="slide-count">01 / 05 <span/></div></div></section>
-<section className="discipline"><div className="shell">{["DESIGN.","DEVELOPMENT.","COMMERCE.","AUTOMATION."].map(x=><div key={x}>{x}<span>＋</span></div>)}</div></section>
-<section id="services" className="capabilities"><div className="shell cap-grid"><div className="cap-copy"><p className="red-label">CAPABILITIES</p><h2>MORE THAN WEBSITES.<br/>WE BUILD <em>DIGITAL<br/>INFRASTRUCTURE.</em></h2><p>From high-performing websites to full business systems,<br/>we help you grow, automate, and operate stronger online.</p><a className="dark-btn" href="#contact">EXPLORE ALL SERVICES <ArrowRight size={14}/></a></div><div className="service-grid">{services.map(({icon:Icon,title,text})=><article key={title}><Icon/><h3>{title}</h3><p>{text}</p></article>)}</div></div></section>
-<section id="work" className="featured"><div className="shell feature-grid"><div className="feature-copy"><p className="red-label">FEATURED WORK</p><h2>REAL BUSINESSES.<br/>REAL RESULTS.</h2><p>Custom solutions for brands that are<br/>building what’s next.</p><a className="dark-btn" href="https://keephuntsvillestrange.com" target="_blank">VIEW ALL PROJECTS <ArrowRight size={14}/></a></div><div className="devices"><div className="laptop"><div className="screen"><small>FORGED DIGITAL</small><strong>BUILT<br/>DIFFERENT.</strong><p>PERFORMANCE MEETS PURPOSE.</p><span>SHOP NOW</span></div></div><div className="phone"><div className="screen"><small>FORGED</small><strong>GEAR<br/>BUILT<br/>FOR MORE.</strong><span>SHOP NOW</span></div></div></div><div className="project-info"><h3>KHS</h3><small>E-COMMERCE / BRANDING / SEO</small><p>A high-performance e-commerce store built for a brand that lives outside the ordinary.</p><a href="https://keephuntsvillestrange.com" target="_blank">VIEW PROJECT <ArrowRight size={14}/></a></div></div></section>
-<section id="process" className="process"><div className="lava-edge"/><div className="shell process-head"><div><p className="red-label">OUR PROCESS</p><h2>A CLEAR PATH<br/>FROM IDEA TO IMPACT.</h2></div><div><p>No guesswork. No fluff. Just a proven process<br/>designed to get your project from concept to<br/>completion — and beyond.</p><a className="outline-btn" href="#contact">OUR PROCESS <ArrowRight size={14}/></a></div></div><div className="shell timeline">{steps.map((s,i)=><div className="step" key={s[0]}><b>0{i+1}</b><span className="dot"/><h3>{s[0]}</h3><p>{s[1]}</p></div>)}</div></section>
-<footer id="contact" className="concept-footer shell"><a className="wordmark" href="#top"><Logo/><span><strong>FORGED DIGITAL</strong><small>BUILD A STRONGER TOMORROW</small></span></a><nav><a href="#work">WORK</a><a href="#services">SERVICES</a><a href="#process">PROCESS</a><a href="mailto:Aaron.forgeddigital@gmail.com">CONTACT</a></nav><div className="social">◎　▶　in</div></footer>
-</main>}
+const steps = ["Discovery", "Design", "Build", "Launch", "Support"];
+
+export default function Home() {
+  return (
+    <main>
+      <section className="concept-stage" aria-label="Forged Digital homepage">
+        <img className="concept-stage-image" src="/concept/concept-full.webp" alt="" aria-hidden="true" />
+        <a className="hotspot hs-logo" href="#top" aria-label="Forged Digital home" />
+        <a className="hotspot hs-work" href="#work" aria-label="Work" />
+        <a className="hotspot hs-services" href="#services" aria-label="Services" />
+        <a className="hotspot hs-process" href="#process" aria-label="Process" />
+        <a className="hotspot hs-about" href="#about" aria-label="About" />
+        <a className="hotspot hs-start-top" href="mailto:Aaron.forgeddigital@gmail.com" aria-label="Start a project" />
+        <a className="hotspot hs-start-hero" href="mailto:Aaron.forgeddigital@gmail.com" aria-label="Start a project" />
+        <a className="hotspot hs-build" href="#services" aria-label="See what we build" />
+        <a className="hotspot hs-services-btn" href="#services" aria-label="Explore all services" />
+        <a className="hotspot hs-projects" href="#work" aria-label="View all projects" />
+        <a className="hotspot hs-project" href="https://keephuntsvillestrange.com" target="_blank" rel="noreferrer" aria-label="View Keep Huntsville Strange project" />
+        <a className="hotspot hs-process-btn" href="#process" aria-label="Our process" />
+        <a className="hotspot hs-footer-contact" href="mailto:Aaron.forgeddigital@gmail.com" aria-label="Contact Forged Digital" />
+      </section>
+
+      <section className="mobile-build" id="top">
+        <header className="mobile-header">
+          <div className="mobile-brand"><span className="mobile-mark">FD</span><div><strong>FORGED</strong><small>DIGITAL</small></div></div>
+          <a href="mailto:Aaron.forgeddigital@gmail.com">START A PROJECT</a>
+        </header>
+        <section className="mobile-hero">
+          <p>FORGED DIGITAL</p>
+          <h1>WEBSITES BUILT<br/>TO <em>HIT DIFFERENT.</em></h1>
+          <span>Custom web design, e-commerce, integrations, and digital systems built around your business — not a template.</span>
+          <div><a className="m-red" href="mailto:Aaron.forgeddigital@gmail.com">START A PROJECT <ArrowRight size={15}/></a><a className="m-dark" href="#services">SEE WHAT WE BUILD</a></div>
+        </section>
+        <section className="mobile-disciplines">{["DESIGN.","DEVELOPMENT.","COMMERCE.","AUTOMATION."].map(x=><b key={x}>{x}</b>)}</section>
+        <section id="services" className="mobile-section"><p className="m-label">CAPABILITIES</p><h2>MORE THAN WEBSITES.<br/>WE BUILD <em>DIGITAL INFRASTRUCTURE.</em></h2><div className="mobile-services">{services.map(({icon:Icon,title,text})=><article key={title}><Icon/><h3>{title}</h3><p>{text}</p></article>)}</div></section>
+        <section id="work" className="mobile-section mobile-work"><p className="m-label">FEATURED WORK</p><h2>REAL BUSINESSES.<br/>REAL RESULTS.</h2><div className="mobile-device-card"><strong>KHS</strong><span>E-COMMERCE / BRANDING / SEO</span><p>A high-performance e-commerce store built for a brand that lives outside the ordinary.</p><a href="https://keephuntsvillestrange.com" target="_blank" rel="noreferrer">VIEW PROJECT <ArrowRight size={14}/></a></div></section>
+        <section id="process" className="mobile-section mobile-process"><p className="m-label">OUR PROCESS</p><h2>A CLEAR PATH<br/>FROM IDEA TO IMPACT.</h2><div>{steps.map((step,i)=><article key={step}><b>0{i+1}</b><span/><h3>{step}</h3></article>)}</div></section>
+        <footer id="about" className="mobile-footer"><strong>FORGED DIGITAL</strong><a href="mailto:Aaron.forgeddigital@gmail.com">Aaron.forgeddigital@gmail.com</a><a href="tel:+18503901669">850-390-1669</a></footer>
+      </section>
+
+      <div className="sr-only">
+        <h1>Forged Digital</h1><p>Custom web design, e-commerce, integrations, automation, memberships, and ongoing website support.</p>
+      </div>
+    </main>
+  );
+}
