@@ -6,145 +6,37 @@ import { supabase } from "@/lib/supabase";
 import "./portal.css";
 
 type Tab="customer"|"business"|"website"|"progress"|"branding"|"chat";
-type AnyRow=any;
-const menu:[Tab,string,any][]=[
-  ["customer","Customer Info",UserRound],["business","Business Info",Building2],["website","Website Info",Globe2],["progress","Build Progress",Gauge],["branding","Branding",Palette],["chat","Private Chat",MessageSquare],
-];
-
+type Row=any;
+const menu:[Tab,string,any][]=[["customer","Customer Info",UserRound],["business","Business Info",Building2],["website","Website Info",Globe2],["progress","Build Progress",Gauge],["branding","Branding",Palette],["chat","Private Chat",MessageSquare]];
 function SectionTitle({eyebrow,title,copy}:{eyebrow:string,title:string,copy:string}){return <div className="portal-section-title"><p>{eyebrow}</p><h1>{title}</h1><span>{copy}</span></div>}
-function EditField({label,value,onChange,placeholder=""}:{label:string,value:string,onChange:(v:string)=>void,placeholder?:string}){return <label className="portal-field portal-edit-field"><span>{label}</span><input value={value||""} placeholder={placeholder} onChange={e=>onChange(e.target.value)}/></label>}
+function EditField({label,value,onChange,placeholder="",readOnly=false}:{label:string,value:string,onChange:(v:string)=>void,placeholder?:string,readOnly?:boolean}){return <label className="portal-field portal-edit-field"><span>{label}</span><input value={value||""} placeholder={placeholder} readOnly={readOnly} onChange={e=>onChange(e.target.value)}/></label>}
 
 export default function PortalPage(){
-  const [tab,setTab]=useState<Tab>("progress");
-  const [loading,setLoading]=useState(true);
-  const [user,setUser]=useState<any>(null);
-  const [profile,setProfile]=useState<AnyRow>(null);
-  const [client,setClient]=useState<AnyRow>(null);
-  const [business,setBusiness]=useState<AnyRow>({});
-  const [website,setWebsite]=useState<AnyRow>({});
-  const [project,setProject]=useState<AnyRow>(null);
-  const [milestones,setMilestones]=useState<AnyRow[]>([]);
-  const [assets,setAssets]=useState<AnyRow[]>([]);
-  const [messages,setMessages]=useState<AnyRow[]>([]);
-  const [authMode,setAuthMode]=useState<"signin"|"signup">("signin");
-  const [authForm,setAuthForm]=useState({email:"",password:"",fullName:"",company:""});
-  const [notice,setNotice]=useState("");
-  const [saving,setSaving]=useState(false);
-  const [chatText,setChatText]=useState("");
+ const [tab,setTab]=useState<Tab>("progress"),[loading,setLoading]=useState(true),[user,setUser]=useState<any>(null),[profile,setProfile]=useState<Row>(null),[client,setClient]=useState<Row>(null),[business,setBusiness]=useState<Row>({}),[website,setWebsite]=useState<Row>({}),[project,setProject]=useState<Row>(null),[milestones,setMilestones]=useState<Row[]>([]),[assets,setAssets]=useState<Row[]>([]),[messages,setMessages]=useState<Row[]>([]),[authMode,setAuthMode]=useState<"signin"|"signup">("signin"),[authForm,setAuthForm]=useState({email:"",password:"",fullName:"",company:""}),[inviteToken,setInviteToken]=useState(""),[inviteValid,setInviteValid]=useState(false),[notice,setNotice]=useState(""),[saving,setSaving]=useState(false),[chatText,setChatText]=useState("");
 
-  async function loadPortal(activeUser:any){
-    setLoading(true); setNotice(""); setUser(activeUser);
-    const {data:p}=await supabase.from("profiles").select("*").eq("id",activeUser.id).single();
-    setProfile(p);
-    const {data:c}=await supabase.from("client_accounts").select("*").eq("user_id",activeUser.id).single();
-    setClient(c);
-    if(c){
-      const [{data:b},{data:w},{data:pr},{data:a},{data:m}]=await Promise.all([
-        supabase.from("business_info").select("*").eq("client_id",c.id).maybeSingle(),
-        supabase.from("website_info").select("*").eq("client_id",c.id).maybeSingle(),
-        supabase.from("projects").select("*").eq("client_id",c.id).order("created_at",{ascending:false}).limit(1).maybeSingle(),
-        supabase.from("branding_assets").select("*").eq("client_id",c.id).order("created_at",{ascending:false}),
-        supabase.from("messages").select("*").eq("client_id",c.id).order("created_at",{ascending:true}),
-      ]);
-      setBusiness(b||{}); setWebsite(w||{}); setProject(pr||null); setAssets(a||[]); setMessages(m||[]);
-      if(pr){const {data:ms}=await supabase.from("project_milestones").select("*").eq("project_id",pr.id).order("position");setMilestones(ms||[])}
-    }
-    setLoading(false);
-  }
+ async function loadPortal(activeUser:any){setLoading(true);setUser(activeUser);const {data:p}=await supabase.from("profiles").select("*").eq("id",activeUser.id).single();setProfile(p);if(p?.role==="admin"){window.location.href="/admin";return;}const {data:c}=await supabase.from("client_accounts").select("*").eq("user_id",activeUser.id).maybeSingle();setClient(c);if(c){const [{data:b},{data:w},{data:pr},{data:a},{data:m}]=await Promise.all([supabase.from("business_info").select("*").eq("client_id",c.id).maybeSingle(),supabase.from("website_info").select("*").eq("client_id",c.id).maybeSingle(),supabase.from("projects").select("*").eq("client_id",c.id).order("created_at",{ascending:false}).limit(1).maybeSingle(),supabase.from("branding_assets").select("*").eq("client_id",c.id).order("created_at",{ascending:false}),supabase.from("messages").select("*").eq("client_id",c.id).order("created_at",{ascending:true})]);setBusiness(b||{});setWebsite(w||{});setProject(pr||null);setAssets(a||[]);setMessages(m||[]);if(pr){const {data:ms}=await supabase.from("project_milestones").select("*").eq("project_id",pr.id).order("position");setMilestones(ms||[])}}setLoading(false)}
 
-  useEffect(()=>{
-    let sub:any;
-    supabase.auth.getSession().then(({data})=>{if(data.session?.user)loadPortal(data.session.user);else setLoading(false)});
-    const {data:authSub}=supabase.auth.onAuthStateChange((_event,session)=>{if(session?.user)loadPortal(session.user);else{setUser(null);setLoading(false)}});
-    sub=authSub.subscription;
-    return()=>sub?.unsubscribe();
-  },[]);
+ useEffect(()=>{const token=new URLSearchParams(window.location.search).get("invite");if(token){setInviteToken(token);supabase.rpc("get_invitation",{invite_token:token}).then(({data,error})=>{const row=data?.[0];if(!error&&row){setInviteValid(true);setAuthMode("signup");setAuthForm(f=>({...f,email:row.email||"",fullName:row.contact_name||"",company:row.company_name||""}));setNotice("Invitation verified. Create your password to activate the portal.")}else setNotice("This invitation is invalid or has expired.")})}let subscription:any;supabase.auth.getSession().then(({data})=>{if(data.session?.user)loadPortal(data.session.user);else setLoading(false)});const {data:s}=supabase.auth.onAuthStateChange((_event,session)=>{if(session?.user)loadPortal(session.user);else{setUser(null);setLoading(false)}});subscription=s.subscription;return()=>subscription?.unsubscribe()},[]);
+ useEffect(()=>{if(!client)return;const ch=supabase.channel(`portal-messages-${client.id}`).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:`client_id=eq.${client.id}`},payload=>setMessages(cur=>cur.some(x=>x.id===payload.new.id)?cur:[...cur,payload.new])).subscribe();return()=>{supabase.removeChannel(ch)}},[client?.id]);
 
-  useEffect(()=>{
-    if(!client)return;
-    const channel=supabase.channel(`portal-messages-${client.id}`).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:`client_id=eq.${client.id}`},payload=>setMessages(cur=>cur.some(x=>x.id===payload.new.id)?cur:[...cur,payload.new])).subscribe();
-    return()=>{supabase.removeChannel(channel)};
-  },[client?.id]);
+ async function handleAuth(e:React.FormEvent){e.preventDefault();setNotice("");if(authMode==="signin"){const {error}=await supabase.auth.signInWithPassword({email:authForm.email,password:authForm.password});if(error)setNotice(error.message);return;}const meta:any={full_name:authForm.fullName,company_name:authForm.company};if(inviteValid)meta.invite_token=inviteToken;const {data,error}=await supabase.auth.signUp({email:authForm.email,password:authForm.password,options:{data:meta}});if(error){setNotice(error.message);return;}if(data.user&&data.session)await loadPortal(data.user);else setNotice("Account created. Check your email to confirm your address, then sign in.")}
+ async function saveCustomer(){if(!client||!user)return;setSaving(true);await Promise.all([supabase.from("profiles").update({full_name:client.contact_name||null,phone:client.phone||null}).eq("id",user.id),supabase.from("client_accounts").update({contact_name:client.contact_name||null,company_name:client.company_name||null,phone:client.phone||null,email:client.email||user.email}).eq("id",client.id)]);setSaving(false);setNotice("Customer information saved.")}
+ async function saveBusiness(){if(!client)return;setSaving(true);const payload={client_id:client.id,legal_name:business.legal_name||null,public_name:business.public_name||null,industry:business.industry||null,address_line1:business.address_line1||null,address_line2:business.address_line2||null,city:business.city||null,state:business.state||null,postal_code:business.postal_code||null,notes:business.notes||null};const {data}=await supabase.from("business_info").upsert(payload,{onConflict:"client_id"}).select().single();if(data)setBusiness(data);setSaving(false);setNotice("Business information saved.")}
+ async function saveWebsite(){if(!client)return;setSaving(true);const payload={client_id:client.id,domain_name:website.domain_name||null,current_website:website.current_website||null,hosting_provider:website.hosting_provider||null,cms_platform:website.cms_platform||null,registrar:website.registrar||null,notes:website.notes||null};const {data}=await supabase.from("website_info").upsert(payload,{onConflict:"client_id"}).select().single();if(data)setWebsite(data);setSaving(false);setNotice("Website information saved.")}
+ async function uploadAsset(file:File,assetType:string){if(!client||!user)return;setNotice("Uploading...");const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"-");const path=`${client.id}/${Date.now()}-${safe}`;const {error}=await supabase.storage.from("branding").upload(path,file);if(error){setNotice(error.message);return;}const {data,error:rowError}=await supabase.from("branding_assets").insert({client_id:client.id,uploaded_by:user.id,file_name:file.name,storage_path:path,mime_type:file.type,file_size:file.size,asset_type:assetType}).select().single();if(rowError){setNotice(rowError.message);return;}if(data)setAssets(cur=>[data,...cur]);setNotice("Brand asset uploaded.")}
+ async function sendMessage(){if(!chatText.trim()||!client||!user)return;const body=chatText.trim();setChatText("");const {data,error}=await supabase.from("messages").insert({client_id:client.id,sender_id:user.id,body}).select().single();if(error){setNotice(error.message);setChatText(body);return;}if(data)setMessages(cur=>cur.some(x=>x.id===data.id)?cur:[...cur,data])}
+ async function signOut(){await supabase.auth.signOut();setUser(null);setClient(null)}
 
-  async function handleAuth(e:React.FormEvent){
-    e.preventDefault(); setNotice("");
-    if(authMode==="signin"){
-      const {error}=await supabase.auth.signInWithPassword({email:authForm.email,password:authForm.password});
-      if(error)setNotice(error.message);
-    }else{
-      const {data,error}=await supabase.auth.signUp({email:authForm.email,password:authForm.password,options:{data:{full_name:authForm.fullName,company_name:authForm.company}}});
-      if(error){setNotice(error.message);return;}
-      if(data.user&&data.session){await supabase.from("client_accounts").update({company_name:authForm.company,contact_name:authForm.fullName}).eq("user_id",data.user.id);await loadPortal(data.user)}
-      else setNotice("Account created. Check your email to confirm your address, then sign in.");
-    }
-  }
+ if(loading)return <main className="portal-auth-page"><img src="/assets/forged-logo-stacked.webp" alt="Forged Digital"/><p>LOADING CLIENT PORTAL...</p></main>;
+ if(!user)return <main className="portal-auth-page"><div className="portal-auth-card"><Link href="/"><img src="/assets/forged-logo-stacked.webp" alt="Forged Digital"/></Link><p>CLIENT PORTAL</p><h1>{authMode==="signin"?"SIGN IN":inviteValid?"ACTIVATE PORTAL":"CREATE ACCOUNT"}</h1>{inviteValid&&<div className="portal-invite-badge">SECURE CLIENT INVITATION</div>}<form onSubmit={handleAuth}>{authMode==="signup"&&<><input required placeholder="Full name" value={authForm.fullName} onChange={e=>setAuthForm({...authForm,fullName:e.target.value})}/><input placeholder="Company name" value={authForm.company} onChange={e=>setAuthForm({...authForm,company:e.target.value})}/></>}<input required type="email" placeholder="Email" readOnly={inviteValid&&authMode==="signup"} value={authForm.email} onChange={e=>setAuthForm({...authForm,email:e.target.value})}/><input required minLength={8} type="password" placeholder="Password" value={authForm.password} onChange={e=>setAuthForm({...authForm,password:e.target.value})}/><button type="submit">{authMode==="signin"?"SIGN IN":inviteValid?"ACTIVATE CLIENT PORTAL":"CREATE ACCOUNT"}</button></form>{notice&&<span className="portal-auth-notice">{notice}</span>}{!inviteValid&&<button className="portal-auth-switch" onClick={()=>{setAuthMode(authMode==="signin"?"signup":"signin");setNotice("")}}>{authMode==="signin"?"Need an account? Create one":"Already have an account? Sign in"}</button>}</div></main>;
 
-  async function saveCustomer(){
-    if(!client||!user)return;setSaving(true);
-    await Promise.all([
-      supabase.from("profiles").update({full_name:client.contact_name||null,phone:client.phone||null}).eq("id",user.id),
-      supabase.from("client_accounts").update({contact_name:client.contact_name||null,company_name:client.company_name||null,phone:client.phone||null,email:client.email||user.email}).eq("id",client.id)
-    ]);
-    setSaving(false);setNotice("Customer information saved.");
-  }
-  async function saveBusiness(){
-    if(!client)return;setSaving(true);
-    const payload={client_id:client.id,legal_name:business.legal_name||null,public_name:business.public_name||null,industry:business.industry||null,address_line1:business.address_line1||null,address_line2:business.address_line2||null,city:business.city||null,state:business.state||null,postal_code:business.postal_code||null,notes:business.notes||null};
-    const {data}=await supabase.from("business_info").upsert(payload,{onConflict:"client_id"}).select().single();if(data)setBusiness(data);setSaving(false);setNotice("Business information saved.");
-  }
-  async function saveWebsite(){
-    if(!client)return;setSaving(true);
-    const payload={client_id:client.id,domain_name:website.domain_name||null,current_website:website.current_website||null,hosting_provider:website.hosting_provider||null,cms_platform:website.cms_platform||null,registrar:website.registrar||null,notes:website.notes||null};
-    const {data}=await supabase.from("website_info").upsert(payload,{onConflict:"client_id"}).select().single();if(data)setWebsite(data);setSaving(false);setNotice("Website information saved.");
-  }
-  async function uploadAsset(file:File,assetType:string){
-    if(!client||!user)return;setNotice("Uploading...");
-    const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"-");const path=`${client.id}/${Date.now()}-${safe}`;
-    const {error}=await supabase.storage.from("branding").upload(path,file,{upsert:false});
-    if(error){setNotice(error.message);return;}
-    const {data,error:rowError}=await supabase.from("branding_assets").insert({client_id:client.id,uploaded_by:user.id,file_name:file.name,storage_path:path,mime_type:file.type,file_size:file.size,asset_type:assetType}).select().single();
-    if(rowError){setNotice(rowError.message);return;}setAssets(cur=>data?[data,...cur]:cur);setNotice("Brand asset uploaded.");
-  }
-  async function sendMessage(){
-    if(!chatText.trim()||!client||!user)return;const body=chatText.trim();setChatText("");
-    const {data,error}=await supabase.from("messages").insert({client_id:client.id,sender_id:user.id,body}).select().single();
-    if(error){setNotice(error.message);setChatText(body);return;}if(data)setMessages(cur=>cur.some(x=>x.id===data.id)?cur:[...cur,data]);
-  }
-  async function signOut(){await supabase.auth.signOut();setProfile(null);setClient(null);setProject(null)}
-
-  const pct=project?.progress||0;
-  const projectLabel=project?.name||"Website Build";
-  const companyLabel=client?.company_name||business.public_name||"Your Company";
-  const projectNumber=client?.id?`FD-${client.id.slice(0,8).toUpperCase()}`:"CLIENT PORTAL";
-
-  if(loading)return <main className="portal-auth-page"><img src="/assets/forged-logo-stacked.webp" alt="Forged Digital"/><p>LOADING CLIENT PORTAL...</p></main>;
-  if(!user)return <main className="portal-auth-page"><div className="portal-auth-card"><Link href="/"><img src="/assets/forged-logo-stacked.webp" alt="Forged Digital"/></Link><p>CLIENT PORTAL</p><h1>{authMode==="signin"?"SIGN IN":"CREATE ACCOUNT"}</h1><form onSubmit={handleAuth}>{authMode==="signup"&&<><input required placeholder="Full name" value={authForm.fullName} onChange={e=>setAuthForm({...authForm,fullName:e.target.value})}/><input placeholder="Company name" value={authForm.company} onChange={e=>setAuthForm({...authForm,company:e.target.value})}/></>}<input required type="email" placeholder="Email" value={authForm.email} onChange={e=>setAuthForm({...authForm,email:e.target.value})}/><input required minLength={8} type="password" placeholder="Password" value={authForm.password} onChange={e=>setAuthForm({...authForm,password:e.target.value})}/><button type="submit">{authMode==="signin"?"SIGN IN":"CREATE ACCOUNT"}</button></form>{notice&&<span className="portal-auth-notice">{notice}</span>}<button className="portal-auth-switch" onClick={()=>{setAuthMode(authMode==="signin"?"signup":"signin");setNotice("")}}>{authMode==="signin"?"Need an account? Create one":"Already have an account? Sign in"}</button></div></main>;
-
-  return <main className="portal-page">
-    <aside className="portal-sidebar">
-      <Link href="/" className="portal-brand"><img src="/assets/forged-logo-stacked.webp" alt="Forged Digital"/></Link>
-      <div className="portal-client-mini"><span>CLIENT PORTAL</span><b>{companyLabel}</b><small>{projectNumber}</small></div>
-      <nav>{menu.map(([id,label,Icon])=><button key={id} className={tab===id?"active":""} onClick={()=>{setTab(id);setNotice("")}}><Icon size={17}/><span>{label}</span><ChevronRight size={14}/></button>)}</nav>
-      <button className="portal-signout" onClick={signOut}><LogOut size={16}/> SIGN OUT</button>
-    </aside>
-
-    <section className="portal-main">
-      <header className="portal-topbar"><div><span>PROJECT STATUS</span><b>{project?.status||"Discovery"}</b></div><div className="portal-status"><i/> {projectLabel.toUpperCase()}</div></header>
-      <div className="portal-content">
-        {notice&&<div className="portal-notice">{notice}</div>}
-
-        {tab==="customer"&&<><SectionTitle eyebrow="ACCOUNT" title="CUSTOMER INFO" copy="Primary contact information for this project."/><div className="portal-grid two"><EditField label="NAME" value={client?.contact_name||profile?.full_name||""} onChange={v=>setClient({...client,contact_name:v})}/><EditField label="EMAIL" value={client?.email||user.email||""} onChange={v=>setClient({...client,email:v})}/><EditField label="PHONE" value={client?.phone||profile?.phone||""} onChange={v=>setClient({...client,phone:v})}/><EditField label="COMPANY" value={client?.company_name||""} onChange={v=>setClient({...client,company_name:v})}/></div><button className="portal-save" onClick={saveCustomer} disabled={saving}>{saving?"SAVING...":"SAVE CUSTOMER INFO"}</button></>}
-
-        {tab==="business"&&<><SectionTitle eyebrow="BUSINESS" title="BUSINESS INFO" copy="Core business details used throughout the project."/><div className="portal-grid two"><EditField label="LEGAL BUSINESS NAME" value={business.legal_name||""} onChange={v=>setBusiness({...business,legal_name:v})}/><EditField label="PUBLIC / BRAND NAME" value={business.public_name||""} onChange={v=>setBusiness({...business,public_name:v})}/><EditField label="INDUSTRY" value={business.industry||""} onChange={v=>setBusiness({...business,industry:v})}/><EditField label="ADDRESS" value={business.address_line1||""} onChange={v=>setBusiness({...business,address_line1:v})}/><EditField label="CITY" value={business.city||""} onChange={v=>setBusiness({...business,city:v})}/><EditField label="STATE" value={business.state||""} onChange={v=>setBusiness({...business,state:v})}/></div><label className="portal-note portal-edit-note"><span>BUSINESS SUMMARY / NOTES</span><textarea value={business.notes||""} onChange={e=>setBusiness({...business,notes:e.target.value})}/></label><button className="portal-save" onClick={saveBusiness} disabled={saving}>{saving?"SAVING...":"SAVE BUSINESS INFO"}</button></>}
-
-        {tab==="website"&&<><SectionTitle eyebrow="WEBSITE" title="WEBSITE INFO" copy="Domain, platform, hosting, and project-specific website details."/><div className="portal-grid two"><EditField label="DOMAIN" value={website.domain_name||""} onChange={v=>setWebsite({...website,domain_name:v})}/><EditField label="CURRENT WEBSITE" value={website.current_website||""} onChange={v=>setWebsite({...website,current_website:v})}/><EditField label="HOSTING PROVIDER" value={website.hosting_provider||""} onChange={v=>setWebsite({...website,hosting_provider:v})}/><EditField label="CURRENT PLATFORM" value={website.cms_platform||""} onChange={v=>setWebsite({...website,cms_platform:v})}/><EditField label="DOMAIN REGISTRAR" value={website.registrar||""} onChange={v=>setWebsite({...website,registrar:v})}/><EditField label="TARGET LAUNCH" value={project?.target_launch||""} onChange={()=>{}} placeholder="Set by Forged Digital"/></div><label className="portal-note portal-edit-note"><span>WEBSITE GOALS / NOTES</span><textarea value={website.notes||""} onChange={e=>setWebsite({...website,notes:e.target.value})}/></label><button className="portal-save" onClick={saveWebsite} disabled={saving}>{saving?"SAVING...":"SAVE WEBSITE INFO"}</button></>}
-
-        {tab==="progress"&&<><SectionTitle eyebrow="PROJECT" title="WEBSITE BUILD PROGRESS" copy="A clear view of what is complete, what is active, and what comes next."/><div className="progress-summary"><div><span>OVERALL PROGRESS</span><strong>{pct}%</strong></div><div className="progress-track"><i style={{width:`${pct}%`}}/></div></div><div className="milestone-list">{milestones.map(m=><article key={m.id} className={m.status==="done"?"done":m.status==="active"?"active":""}>{m.status==="done"?<Check/>:m.status==="active"?<Clock3/>:<Circle/>}<div><b>{m.title}</b><span>{m.description}</span></div><small>{m.status==="done"?"COMPLETE":m.status==="active"?"IN PROGRESS":"PENDING"}</small></article>)}</div></>}
-
-        {tab==="branding"&&<><SectionTitle eyebrow="ASSETS" title="BRANDING" copy="A shared workspace for logos, colors, fonts, photos, and brand references."/><div className="brand-upload-grid"><label className="upload-card"><Upload size={24}/><b>LOGOS</b><span>Upload primary, alternate, icon, SVG, PNG or WebP files.</span><input type="file" accept=".svg,.png,.webp,.jpg,.jpeg" onChange={e=>e.target.files?.[0]&&uploadAsset(e.target.files[0],"logo")}/><button type="button">ADD LOGO FILES</button></label><label className="upload-card"><Upload size={24}/><b>BRAND ASSETS</b><span>Colors, fonts, style guides, photos, copy and references.</span><input type="file" onChange={e=>e.target.files?.[0]&&uploadAsset(e.target.files[0],"other")}/><button type="button">ADD BRAND FILES</button></label></div><div className="asset-list">{assets.length===0?<div className="portal-empty">No brand files uploaded yet.</div>:assets.map(a=><div key={a.id}><span className="asset-icon">{a.asset_type==="logo"?"LG":"FD"}</span><p><b>{a.file_name}</b><small>{a.mime_type||"File"} · {a.file_size?`${Math.round(a.file_size/1024)} KB`:""}</small></p><strong>RECEIVED</strong></div>)}</div></>}
-
-        {tab==="chat"&&<><SectionTitle eyebrow="DIRECT" title="PRIVATE CHAT" copy="Project-specific conversation between you and Forged Digital."/><div className="chat-shell"><div className="chat-history">{messages.length===0?<div className="portal-empty">No messages yet. Start the conversation below.</div>:messages.map(m=><div key={m.id} className={`chat-message ${m.sender_id===user.id?"me":"them"}`}><small>{m.sender_id===user.id?"YOU":"FORGED DIGITAL"} · {new Date(m.created_at).toLocaleString()}</small><p>{m.body}</p></div>)}</div><div className="chat-compose"><textarea value={chatText} onChange={e=>setChatText(e.target.value)} placeholder="Write a message to Forged Digital..."/><button onClick={sendMessage}><Send size={17}/> SEND</button></div></div></>}
-      </div>
-    </section>
-  </main>
+ const pct=project?.progress||0,companyLabel=client?.company_name||business.public_name||"Your Company",projectNumber=client?.id?`FD-${client.id.slice(0,8).toUpperCase()}`:"CLIENT PORTAL";
+ return <main className="portal-page"><aside className="portal-sidebar"><Link href="/" className="portal-brand"><img src="/assets/forged-logo-stacked.webp" alt="Forged Digital"/></Link><div className="portal-client-mini"><span>CLIENT PORTAL</span><b>{companyLabel}</b><small>{projectNumber}</small></div><nav>{menu.map(([id,label,Icon])=><button key={id} className={tab===id?"active":""} onClick={()=>{setTab(id);setNotice("")}}><Icon size={17}/><span>{label}</span><ChevronRight size={14}/></button>)}</nav><button className="portal-signout" onClick={signOut}><LogOut size={16}/> SIGN OUT</button></aside><section className="portal-main"><header className="portal-topbar"><div><span>PROJECT STATUS</span><b>{project?.status||"Discovery"}</b></div><div className="portal-status"><i/> {(project?.name||"Website Build").toUpperCase()}</div></header><div className="portal-content">{notice&&<div className="portal-notice">{notice}</div>}
+ {tab==="customer"&&<><SectionTitle eyebrow="ACCOUNT" title="CUSTOMER INFO" copy="Primary contact information for this project."/><div className="portal-grid two"><EditField label="NAME" value={client?.contact_name||profile?.full_name||""} onChange={v=>setClient({...client,contact_name:v})}/><EditField label="EMAIL" value={client?.email||user.email||""} onChange={v=>setClient({...client,email:v})}/><EditField label="PHONE" value={client?.phone||profile?.phone||""} onChange={v=>setClient({...client,phone:v})}/><EditField label="COMPANY" value={client?.company_name||""} onChange={v=>setClient({...client,company_name:v})}/></div><button className="portal-save" onClick={saveCustomer} disabled={saving}>{saving?"SAVING...":"SAVE CUSTOMER INFO"}</button></>}
+ {tab==="business"&&<><SectionTitle eyebrow="BUSINESS" title="BUSINESS INFO" copy="Core business details used throughout the project."/><div className="portal-grid two"><EditField label="LEGAL BUSINESS NAME" value={business.legal_name||""} onChange={v=>setBusiness({...business,legal_name:v})}/><EditField label="PUBLIC / BRAND NAME" value={business.public_name||""} onChange={v=>setBusiness({...business,public_name:v})}/><EditField label="INDUSTRY" value={business.industry||""} onChange={v=>setBusiness({...business,industry:v})}/><EditField label="ADDRESS" value={business.address_line1||""} onChange={v=>setBusiness({...business,address_line1:v})}/><EditField label="CITY" value={business.city||""} onChange={v=>setBusiness({...business,city:v})}/><EditField label="STATE" value={business.state||""} onChange={v=>setBusiness({...business,state:v})}/></div><label className="portal-note portal-edit-note"><span>BUSINESS SUMMARY / NOTES</span><textarea value={business.notes||""} onChange={e=>setBusiness({...business,notes:e.target.value})}/></label><button className="portal-save" onClick={saveBusiness}>{saving?"SAVING...":"SAVE BUSINESS INFO"}</button></>}
+ {tab==="website"&&<><SectionTitle eyebrow="WEBSITE" title="WEBSITE INFO" copy="Domain, platform, hosting, and project-specific website details."/><div className="portal-grid two"><EditField label="DOMAIN" value={website.domain_name||""} onChange={v=>setWebsite({...website,domain_name:v})}/><EditField label="CURRENT WEBSITE" value={website.current_website||""} onChange={v=>setWebsite({...website,current_website:v})}/><EditField label="HOSTING PROVIDER" value={website.hosting_provider||""} onChange={v=>setWebsite({...website,hosting_provider:v})}/><EditField label="CURRENT PLATFORM" value={website.cms_platform||""} onChange={v=>setWebsite({...website,cms_platform:v})}/><EditField label="DOMAIN REGISTRAR" value={website.registrar||""} onChange={v=>setWebsite({...website,registrar:v})}/><EditField label="TARGET LAUNCH" value={project?.target_launch||""} onChange={()=>{}} readOnly placeholder="Set by Forged Digital"/></div><label className="portal-note portal-edit-note"><span>WEBSITE GOALS / NOTES</span><textarea value={website.notes||""} onChange={e=>setWebsite({...website,notes:e.target.value})}/></label><button className="portal-save" onClick={saveWebsite}>{saving?"SAVING...":"SAVE WEBSITE INFO"}</button></>}
+ {tab==="progress"&&<><SectionTitle eyebrow="PROJECT" title="WEBSITE BUILD PROGRESS" copy="A clear view of what is complete, what is active, and what comes next."/><div className="progress-summary"><div><span>OVERALL PROGRESS</span><strong>{pct}%</strong></div><div className="progress-track"><i style={{width:`${pct}%`}}/></div></div><div className="milestone-list">{milestones.map(m=><article key={m.id} className={m.status==="done"?"done":m.status==="active"?"active":""}>{m.status==="done"?<Check/>:m.status==="active"?<Clock3/>:<Circle/>}<div><b>{m.title}</b><span>{m.description}</span></div><small>{m.status==="done"?"COMPLETE":m.status==="active"?"IN PROGRESS":"PENDING"}</small></article>)}</div></>}
+ {tab==="branding"&&<><SectionTitle eyebrow="ASSETS" title="BRANDING" copy="A shared workspace for logos, colors, fonts, photos, and brand references."/><div className="brand-upload-grid"><label className="upload-card"><Upload size={24}/><b>LOGOS</b><span>Upload primary, alternate, icon, SVG, PNG or WebP files.</span><input type="file" hidden onChange={e=>e.target.files?.[0]&&uploadAsset(e.target.files[0],"logo")}/><button type="button">ADD LOGO FILES</button></label><label className="upload-card"><Upload size={24}/><b>BRAND ASSETS</b><span>Colors, fonts, style guides, photos, textures and references.</span><input type="file" hidden onChange={e=>e.target.files?.[0]&&uploadAsset(e.target.files[0],"brand_asset")}/><button type="button">ADD BRAND FILES</button></label></div><div className="asset-list">{assets.map(a=><div key={a.id}><span className="asset-icon">{a.asset_type==="logo"?"FD":"Aa"}</span><p><b>{a.file_name}</b><small>{a.mime_type||"file"}</small></p><strong>RECEIVED</strong></div>)}</div></>}
+ {tab==="chat"&&<><SectionTitle eyebrow="DIRECT" title="PRIVATE CHAT" copy="Project-specific conversation between you and Forged Digital."/><div className="chat-shell"><div className="chat-history">{messages.map(m=><div key={m.id} className={`chat-message ${m.sender_id===user.id?"me":"them"}`}><small>{m.sender_id===user.id?"YOU":"FORGED DIGITAL"} · {new Date(m.created_at).toLocaleString()}</small><p>{m.body}</p></div>)}</div><div className="chat-compose"><textarea value={chatText} onChange={e=>setChatText(e.target.value)} placeholder="Write a message to Forged Digital..."/><button onClick={sendMessage}><Send size={17}/> SEND</button></div></div></>}
+ </div></section></main>;
 }
