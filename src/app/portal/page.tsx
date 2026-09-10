@@ -1,12 +1,12 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { UserRound, Building2, Globe2, Gauge, Palette, MessageSquare, LogOut, Upload, Check, Clock3, Circle, Send, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import "./portal.css";
 
 type Tab="customer"|"business"|"website"|"progress"|"branding"|"chat";
-type AnyRow=Record<string,any>;
+type AnyRow=any;
 const menu:[Tab,string,any][]=[
   ["customer","Customer Info",UserRound],["business","Business Info",Building2],["website","Website Info",Globe2],["progress","Build Progress",Gauge],["branding","Branding",Palette],["chat","Private Chat",MessageSquare],
 ];
@@ -18,11 +18,11 @@ export default function PortalPage(){
   const [tab,setTab]=useState<Tab>("progress");
   const [loading,setLoading]=useState(true);
   const [user,setUser]=useState<any>(null);
-  const [profile,setProfile]=useState<AnyRow|null>(null);
-  const [client,setClient]=useState<AnyRow|null>(null);
+  const [profile,setProfile]=useState<AnyRow>(null);
+  const [client,setClient]=useState<AnyRow>(null);
   const [business,setBusiness]=useState<AnyRow>({});
   const [website,setWebsite]=useState<AnyRow>({});
-  const [project,setProject]=useState<AnyRow|null>(null);
+  const [project,setProject]=useState<AnyRow>(null);
   const [milestones,setMilestones]=useState<AnyRow[]>([]);
   const [assets,setAssets]=useState<AnyRow[]>([]);
   const [messages,setMessages]=useState<AnyRow[]>([]);
@@ -102,8 +102,8 @@ export default function PortalPage(){
     const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"-");const path=`${client.id}/${Date.now()}-${safe}`;
     const {error}=await supabase.storage.from("branding").upload(path,file,{upsert:false});
     if(error){setNotice(error.message);return;}
-    const {data,rowError}=await supabase.from("branding_assets").insert({client_id:client.id,uploaded_by:user.id,file_name:file.name,storage_path:path,mime_type:file.type,file_size:file.size,asset_type:assetType}).select().single();
-    if(rowError){setNotice(rowError.message);return;}setAssets(cur=>[data,...cur]);setNotice("Brand asset uploaded.");
+    const {data,error:rowError}=await supabase.from("branding_assets").insert({client_id:client.id,uploaded_by:user.id,file_name:file.name,storage_path:path,mime_type:file.type,file_size:file.size,asset_type:assetType}).select().single();
+    if(rowError){setNotice(rowError.message);return;}setAssets(cur=>data?[data,...cur]:cur);setNotice("Brand asset uploaded.");
   }
   async function sendMessage(){
     if(!chatText.trim()||!client||!user)return;const body=chatText.trim();setChatText("");
