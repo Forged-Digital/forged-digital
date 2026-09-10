@@ -20,3 +20,5 @@ npm run build
 ```
 
 Primary domain: `forged-digital.com`
+
+Deployment: Vercel Pro production pipeline.
