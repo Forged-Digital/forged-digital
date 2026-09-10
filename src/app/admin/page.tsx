@@ -1,19 +1,19 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, Circle, Clock3, LogOut, MessageSquare, Send } from "lucide-react";
+import { Check, Circle, Clock3, LogOut, Send } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import "./admin.css";
 
-type Row=Record<string,any>;
+type Row=any;
 
 export default function AdminPage(){
   const [loading,setLoading]=useState(true);
   const [user,setUser]=useState<any>(null);
-  const [profile,setProfile]=useState<Row|null>(null);
+  const [profile,setProfile]=useState<Row>(null);
   const [clients,setClients]=useState<Row[]>([]);
-  const [selected,setSelected]=useState<Row|null>(null);
-  const [project,setProject]=useState<Row|null>(null);
+  const [selected,setSelected]=useState<Row>(null);
+  const [project,setProject]=useState<Row>(null);
   const [milestones,setMilestones]=useState<Row[]>([]);
   const [assets,setAssets]=useState<Row[]>([]);
   const [messages,setMessages]=useState<Row[]>([]);
@@ -29,7 +29,7 @@ export default function AdminPage(){
   async function setMilestone(id:string,status:string){await supabase.from("project_milestones").update({status,completed_at:status==="done"?new Date().toISOString():null}).eq("id",id);setMilestones(cur=>cur.map(m=>m.id===id?{...m,status}:m));}
   async function send(){if(!chat.trim()||!selected||!user)return;const body=chat.trim();setChat("");const {data,error}=await supabase.from("messages").insert({client_id:selected.id,sender_id:user.id,body}).select().single();if(error){setNotice(error.message);setChat(body);return;}if(data)setMessages(cur=>[...cur,data])}
   async function markContact(id:string,status:string){await supabase.from("contact_submissions").update({status}).eq("id",id);setContacts(cur=>cur.map(c=>c.id===id?{...c,status}:c))}
-  async function signOut(){await supabase.auth.signOut();location.href="/portal"}
+  async function signOut(){await supabase.auth.signOut();window.location.href="/portal"}
 
   if(loading)return <main className="admin-gate"><p>LOADING...</p></main>;
   if(!user)return <main className="admin-gate"><img src="/assets/forged-logo-stacked.webp" alt="Forged Digital"/><h1>ADMIN SIGN IN REQUIRED</h1><Link href="/portal">GO TO CLIENT PORTAL</Link></main>;
