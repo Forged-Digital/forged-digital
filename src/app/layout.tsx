@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./logo-visibility.css";
 import "./hero-video.css";
 
 export const metadata: Metadata = {

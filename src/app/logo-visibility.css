@@ -1,0 +1,3 @@
+img[src*="/assets/forged-logo-"] {
+  filter: brightness(1.18) saturate(1.05);
+}

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FileText,Upload,Download,CheckCircle2,ListTodo,Bell,ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import "./workflow.css";
+import "../gate.css";
 
 type Row=any;
 export default function ClientWorkflowPage(){
@@ -18,7 +19,7 @@ export default function ClientWorkflowPage(){
  async function markRead(id:string){await supabase.from("notifications").update({is_read:true}).eq("id",id);setNotifications(x=>x.map(n=>n.id===id?{...n,is_read:true}:n))}
  async function markAll(){if(!user)return;await supabase.from("notifications").update({is_read:true}).eq("user_id",user.id).eq("is_read",false);setNotifications(x=>x.map(n=>({...n,is_read:true})))}
  if(loading)return <main className="cwf-gate">LOADING PROJECT HUB...</main>;
- if(!user)return <main className="cwf-gate"><Link href="/portal">CLIENT SIGN IN REQUIRED</Link></main>;
+ if(!user)return <main className="cwf-gate"><h1>CLIENT SIGN IN REQUIRED</h1><Link href="/portal">GO TO CLIENT LOGIN</Link></main>;
  return <main className="cwf-page"><header className="cwf-head"><Link href="/portal"><ArrowLeft size={16}/> PORTAL</Link><img src="/assets/forged-logo-wide.webp" alt="Forged Digital"/><Link href="/portal/billing">BILLING</Link></header><div className="cwf-shell"><div className="cwf-title"><p>PROJECT HUB</p><h1>{client?.company_name||"YOUR PROJECT"}</h1><span>Files, approvals, action items and project notifications in one place.</span></div>{notice&&<div className="cwf-notice">{notice}</div>}
  <section className="cwf-grid"><article className="cwf-card"><div className="cwf-card-head"><FileText/><div><p>DOCUMENTS</p><h2>Files & Contracts</h2></div></div><div className="cwf-upload-row"><input placeholder="What are you uploading?" value={uploadTitle} onChange={e=>setUploadTitle(e.target.value)}/><label><Upload size={14}/> UPLOAD<input type="file" onChange={e=>e.target.files?.[0]&&uploadDocument(e.target.files[0])}/></label></div><div className="cwf-list">{docs.length===0?<span>No documents yet.</span>:docs.map(d=><div key={d.id}><div><b>{d.title}</b><small>{d.document_type.toUpperCase()} · {d.file_name}</small></div><button onClick={()=>openDoc(d)}><Download size={13}/> OPEN</button></div>)}</div></article>
  <article className="cwf-card"><div className="cwf-card-head"><CheckCircle2/><div><p>APPROVALS</p><h2>Review & Respond</h2></div></div><div className="cwf-list approvals">{approvals.length===0?<span>No approval requests.</span>:approvals.map(a=><div key={a.id} className="approval-row"><div><b>{a.title}</b><small>{a.description||"No additional notes"}</small>{a.status==="pending"&&<textarea placeholder="Optional response notes" value={approvalNotes[a.id]||""} onChange={e=>setApprovalNotes({...approvalNotes,[a.id]:e.target.value})}/>}</div>{a.status==="pending"?<div className="approval-actions"><button onClick={()=>respondApproval(a,"approved")}>APPROVE</button><button className="secondary" onClick={()=>respondApproval(a,"changes_requested")}>REQUEST CHANGES</button></div>:<em className={`status ${a.status}`}>{a.status.replaceAll("_"," ")}</em>}</div>)}</div></article>

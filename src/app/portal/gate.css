@@ -1,0 +1,18 @@
+.cwf-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+}
+
+.cwf-gate h1 {
+  font-family: Impact, "Arial Narrow", sans-serif;
+}
+
+.cwf-gate a {
+  border: 1px solid #7d1a1a;
+  padding: 11px 14px;
+  font-size: 9px;
+}

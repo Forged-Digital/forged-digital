@@ -1,7 +1,7 @@
-import Link from "next/link";
 import "./portal-live.css";
 import "./layout.css";
+import PortalShortcuts from "./portal-shortcuts";
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
-  return <><div className="portal-shortcuts"><Link href="/portal/proposals">PROPOSALS</Link><Link href="/portal/workflow">PROJECT HUB</Link><Link href="/portal/billing">BILLING & INVOICES</Link></div>{children}</>;
+  return <><PortalShortcuts />{children}</>;
 }
