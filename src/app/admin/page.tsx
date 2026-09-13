@@ -7,6 +7,7 @@ import { dispatchMessagePush } from "@/lib/push-notifications";
 import { PushNotificationControl } from "@/components/push-notification-control";
 import "./admin.css";
 import "./admin-chat-ui.css";
+import "./admin-login.css";
 
 type Row=any;
 
@@ -28,6 +29,9 @@ export default function AdminPage(){
   const [notice,setNotice]=useState("");
   const [chatDrawer,setChatDrawer]=useState(false);
   const [chatView,setChatView]=useState(false);
+  const [adminAuth,setAdminAuth]=useState({email:"",password:""});
+  const [authNotice,setAuthNotice]=useState("");
+  const [authBusy,setAuthBusy]=useState(false);
 
   useEffect(()=>{supabase.auth.getSession().then(async({data})=>{const u=data.session?.user;if(!u){setLoading(false);return;}setUser(u);const {data:p}=await supabase.from("profiles").select("*").eq("id",u.id).single();setProfile(p);if(p?.role!=="admin"){setLoading(false);return;}const [{data:c},{data:ct},{data:iv},{data:tm}]=await Promise.all([supabase.from("client_accounts").select("*").order("created_at",{ascending:false}),supabase.from("contact_submissions").select("*").order("created_at",{ascending:false}).limit(100),supabase.from("client_invitations").select("*").order("created_at",{ascending:false}).limit(50),supabase.from("messages").select("*").order("created_at",{ascending:false})]);setClients(c||[]);setContacts(ct||[]);setInvitations(iv||[]);setThreadMessages(tm||[]);const first=(c||[])[0];if(first)await chooseClient(first);setLoading(false);});},[]);
   useEffect(()=>{if(!user)return;const ch=supabase.channel("admin-all-messages").on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},payload=>{const row=payload.new;setThreadMessages(cur=>cur.some(x=>x.id===row.id)?cur:[row,...cur]);if(selected?.id===row.client_id)setMessages(cur=>cur.some(x=>x.id===row.id)?cur:[...cur,row])}).subscribe();return()=>{supabase.removeChannel(ch)}},[user?.id,selected?.id]);
@@ -43,10 +47,10 @@ export default function AdminPage(){
   async function send(){if(!chat.trim()||!selected||!user)return;const body=chat.trim();setChat("");const {data,error}=await supabase.from("messages").insert({client_id:selected.id,sender_id:user.id,body}).select().single();if(error){setNotice(error.message);setChat(body);return;}if(data){setMessages(cur=>cur.some(x=>x.id===data.id)?cur:[...cur,data]);void dispatchMessagePush(data.id)}}
   async function markContact(id:string,status:string){await supabase.from("contact_submissions").update({status}).eq("id",id);setContacts(cur=>cur.map(c=>c.id===id?{...c,status}:c))}
   async function signOut(){await supabase.auth.signOut();window.location.href="/portal"}
+  async function adminSignIn(e:React.FormEvent){e.preventDefault();setAuthBusy(true);setAuthNotice("");await supabase.auth.signOut();const {data,error}=await supabase.auth.signInWithPassword({email:adminAuth.email.trim(),password:adminAuth.password});if(error){setAuthNotice(error.message);setAuthBusy(false);return;}const {data:adminProfile}=await supabase.from("profiles").select("role").eq("id",data.user.id).single();if(adminProfile?.role!=="admin"){await supabase.auth.signOut();setAuthNotice("This account does not have administrator access.");setAuthBusy(false);return;}window.location.reload()}
 
   if(loading)return <main className="admin-gate"><p>LOADING...</p></main>;
-  if(!user)return <main className="admin-gate"><img src="/assets/forged-logo-stacked.webp" alt="Forged Digital"/><h1>ADMIN SIGN IN REQUIRED</h1><Link href="/portal">GO TO CLIENT PORTAL</Link></main>;
-  if(profile?.role!=="admin")return <main className="admin-gate"><img src="/assets/forged-logo-stacked.webp" alt="Forged Digital"/><h1>ADMIN ACCESS REQUIRED</h1><Link href="/portal">RETURN TO PORTAL</Link></main>;
+  if(!user||profile?.role!=="admin")return <main className="admin-gate admin-login-gate"><div className="admin-login-card"><img src="/assets/forged-logo-stacked.webp" alt="Forged Digital"/><p className="eyebrow">FORGED DIGITAL</p><h1>ADMIN SIGN IN</h1>{user&&profile?.role!=="admin"&&<span className="admin-current-session">A client account is currently signed in. Admin login will switch accounts.</span>}<form onSubmit={adminSignIn}><input required type="email" autoComplete="username" placeholder="Admin email" value={adminAuth.email} onChange={e=>setAdminAuth({...adminAuth,email:e.target.value})}/><input required type="password" autoComplete="current-password" placeholder="Password" value={adminAuth.password} onChange={e=>setAdminAuth({...adminAuth,password:e.target.value})}/><button type="submit" disabled={authBusy}>{authBusy?"SIGNING IN...":"SIGN IN TO ADMIN"}</button></form>{authNotice&&<span className="admin-auth-notice">{authNotice}</span>}<Link href="/portal">RETURN TO CLIENT PORTAL</Link></div></main>;
 
   const threads=clients.map(client=>{const rows=threadMessages.filter(message=>message.client_id===client.id);return{client,last:rows[0],unread:rows.filter(message=>message.sender_id!==user.id&&!message.read_at).length}}).filter(thread=>thread.last).sort((a,b)=>new Date(b.last.created_at).getTime()-new Date(a.last.created_at).getTime());
   const unreadCount=threads.reduce((total,thread)=>total+thread.unread,0);
