@@ -3,6 +3,7 @@ import "./globals.css";
 import "./logo-visibility.css";
 import "./hero-video.css";
 import "./mobile-stability.css";
+import "./portal/readability.css";
 
 export const metadata: Metadata = {
   title: "Forged Digital",
